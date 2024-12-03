@@ -1,0 +1,103 @@
+﻿@page "/userlist"
+@using UserManagement.Client.Models
+@using UserManagement.Client.Shared
+@using UserManagement.Client.Pages
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject UserManagement.Client.Services.UserService UserService
+@rendermode InteractiveWebAssembly
+
+<h3 class="text-left">
+    <i class="fas fa-users fa-fw"></i> &nbsp; LIST ADMIN
+</h3>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else if (users != null)
+{
+    <div class="table-responsive">
+        <table class="table table-dark table-sm">
+            <thead>
+                <tr class="text-center roboto-medium">
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in users)
+                {
+                    <tr class="text-center">
+                        <td>@user.Name</td>
+                        <td>@user.Username</td>
+                        <td>@user.Email</td>
+                        <td>
+                            <button class="btn btn-warning" @onclick="() => DeleteUser(user)">
+                                <i class="far fa-trash-alt"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <p>No users available.</p>
+}
+
+@if (showDeleteConfirmation)
+{
+    <div class="modal fade show" tabindex="-1" role="dialog" style="display: block;">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Confirmation</h5>
+                    <button type="button" class="close" @onclick="() => showDeleteConfirmation = false" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete @userToDelete.Name?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => showDeleteConfirmation = false">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="async () => await OnDeleteConfirmed(true)">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<User> users;
+    private bool isLoading = true;
+    private bool showDeleteConfirmation;
+    private User userToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await UserService.GetUsersAsync();
+        isLoading = false;
+    }
+
+    private void DeleteUser(User user)
+    {
+        userToDelete = user;
+        showDeleteConfirmation = true;
+    }
+
+    private async Task OnDeleteConfirmed(bool confirmed)
+    {
+        if (confirmed && userToDelete != null)
+        {
+            users.Remove(userToDelete);
+            StateHasChanged();  // Update the UI after deletion
+        }
+        showDeleteConfirmation = false;
+    }
+}

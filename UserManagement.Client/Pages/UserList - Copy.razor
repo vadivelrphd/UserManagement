@@ -1,0 +1,85 @@
+﻿@page "/userlist-copy"
+@using UserManagement.Client.Models
+@using UserManagement.Client.Shared
+@using UserManagement.Client.Pages
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject UserManagement.Client.Services.UserService UserService
+@rendermode InteractiveWebAssembly
+
+<h3>Admin List</h3>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else if (users != null)
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr>
+                    <td>@user.Name</td>
+                    <td>@user.Username</td>
+                    <td>@user.Email</td>
+                    <td>
+                        <button @onclick="@( () => DeleteUser(user) )">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No users available.</p>
+}
+
+@if (showDeleteConfirmation)
+{
+    <p>Delete...</p>
+
+    <DeleteComponent 
+        OnConfirm="OnDeleteConfirmed" 
+        User="userToDelete" 
+        OnClose="() => showDeleteConfirmation = false"></DeleteComponent>
+}
+
+@code {
+    private List<User> users;
+    private bool isLoading = true;
+    private bool showDeleteConfirmation;
+    private User userToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await UserService.GetUsersAsync();
+        isLoading = false;
+    }
+
+    private void DeleteUser(User user)
+    {
+        userToDelete = user;
+        showDeleteConfirmation = true;
+    }
+
+    private async Task OnDeleteConfirmed(bool confirmed)
+    {
+        if (confirmed && userToDelete != null)
+        {
+            //await UserService.DeleteUserAsync(userToDelete.Id);
+            users.Remove(userToDelete);
+            StateHasChanged();  // Update the UI after deletion
+        }
+        showDeleteConfirmation = false;
+    }
+}
